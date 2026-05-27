@@ -1,32 +1,50 @@
-\documentclass[a4paper]{report}
+\documentclass[12pt,a4paper]{report}
 
 %====================== PACKAGES ======================
+% (préambule unifié : un seul \documentclass, un seul inputenc, un seul fontenc)
 
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
 \usepackage[french]{babel}
-\usepackage[utf8x]{inputenc}
-%pour gérer les positionnement d'images
+
+% Géométrie / mise en page
+\usepackage[top=2cm, bottom=2cm, left=2cm, right=2cm]{geometry}
+\usepackage{setspace}
+
+% Maths
+\usepackage{amsmath, amssymb}
+
+% Images / flottants
 \usepackage{float}
-\usepackage{amsmath}
 \usepackage{graphicx}
-\usepackage[colorinlistoftodos]{todonotes}
-\usepackage{url}
-%pour les informations sur un document compilé en PDF et les liens externes / internes
-\usepackage{hyperref}
-%pour la mise en page des tableaux
+\usepackage{placeins}     % \floatbarrier
+\usepackage{subfig}       % galerie d'images
+
+% Tableaux
 \usepackage{array}
 \usepackage{tabularx}
-%pour utiliser \floatbarrier
-\usepackage{placeins}
-%\usepackage{floatrow}
-%espacement entre les lignes
-\usepackage{setspace}
-%modifier la mise en page de l'abstract
+\usepackage{booktabs}
+
+% Couleurs / boîtes / code
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins, breakable}
+
+% Mise en page (titres, en-têtes, listes)
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
 \usepackage{abstract}
-%police et mise en page (marges) du document
-\usepackage[T1]{fontenc}
-\usepackage[top=2cm, bottom=2cm, left=2cm, right=2cm]{geometry}
-%Pour les galerie d'images
-\usepackage{subfig}
+
+% Liens / URL / TODO
+\usepackage{url}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage{hyperref}
+
+% TikZ
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds}
 
 %====================== INFORMATION ET REGLES ======================
 
@@ -34,42 +52,13 @@
 \setcounter{secnumdepth}{4}
 \setcounter{tocdepth}{4}
 
-\hypersetup{							% Information sur le document
-pdfauthor = {Premier Auteur,
-			Deuxième Auteur,
-			Troisième Auteur,
-    		Quatrième Auteur},			% Auteurs
-pdftitle = {Nom du Projet -
-			Sujet du Projet},			% Titre du document
-pdfsubject = {Mémoire de Projet},		% Sujet
-pdfkeywords = {Tag1, Tag2, Tag3, ...},	% Mots-clefs
-pdfstartview={FitH}}					% ajuste la page à la largueur de l'écran
-%pdfcreator = {MikTeX},% Logiciel qui a crée le document
-%pdfproducer = {}} % Société avec produit le logiciel
-
-%======================== DEBUT 
-\documentclass[12pt,a4paper]{article}
-
-% ─── Packages ────────────────────────────────────────────────────────────────
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage[french]{babel}
-\usepackage{geometry}
-\geometry{margin=2.5cm}
-
-\usepackage{amsmath, amssymb}
-\usepackage{graphicx}
-\usepackage{booktabs}
-\usepackage{array}
-\usepackage{xcolor}
-\usepackage{listings}
-\usepackage{hyperref}
-\usepackage{titlesec}
-\usepackage{fancyhdr}
-\usepackage{enumitem}
-\usepackage{tcolorbox}
-\usepackage{tikz}
-\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds}
+\hypersetup{
+  pdfauthor   = {Premier Auteur, Deuxième Auteur, Troisième Auteur, Quatrième Auteur},
+  pdftitle    = {Nom du Projet - Sujet du Projet},
+  pdfsubject  = {Mémoire de Projet},
+  pdfkeywords = {Tag1, Tag2, Tag3},
+  pdfstartview= {FitH}
+}
 
 % ─── Couleurs ────────────────────────────────────────────────────────────────
 \definecolor{primary}{RGB}{30, 90, 160}
@@ -112,7 +101,6 @@ pdfstartview={FitH}}					% ajuste la page à la largueur de l'écran
 \titleformat{\subsection}{\normalsize\bfseries\color{darkgray}}{}{0em}{\thesubsection\quad}
 
 % ─── Boîtes colorées ─────────────────────────────────────────────────────────
-\tcbuselibrary{skins, breakable}
 \newtcolorbox{infobox}[1][]{
   colback=secondary, colframe=primary,
   fonttitle=\bfseries, title=#1,
