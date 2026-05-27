@@ -1,0 +1,430 @@
+
+\chapter{Data preprocessing}
+% ────────────────────────────────────────────────────────────
+\section{Introduction}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textit{Projet du projet}}
+\fancyhead[R]{\small\textit{Casting Defect Classification}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+Ce rapport présente et analyse le pipeline de prétraitement des images développé pour le projet de classification des défauts de pièces de fonderie (\textit{casting defects}). L'objectif est de préparer les données brutes issues d'un dataset d'images industrielles pour l'entraînement, la validation et le test d'un réseau de neurones convolutif.
+
+\begin{infobox}
+[Contexte du projet]
+  Il s'agit d'une \textbf{classification binaire} distinguant deux catégories :
+  \begin{itemize}[noitemsep]
+    \item \textcolor{ok}{\textbf{ok}} — pièces sans défaut
+    \item \textcolor{defect}{\textbf{def}} — pièces présentant un défaut
+  \end{itemize}
+  Le pipeline est conçu pour fonctionner en environnement Google Colab avec accélérateur GPU.
+\end{infobox}
+
+\section{Configuration Générale}
+
+\subsection{Hyperparamètres}
+
+\begin{table}[h!]
+  \centering
+  \renewcommand{\arraystretch}{1.4}
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Paramètre} & \textbf{Valeur} & \textbf{Description} \\
+    \midrule
+    \texttt{IMG\_SIZE}   & 224            & Taille d'entrée du réseau (pixels) \\
+    \texttt{BATCH\_SIZE} & 32             & Taille de lot \\
+    \texttt{NUM\_CLASSES}& 2              & Nombre de classes \\
+    \texttt{SEED}        & 42             & Graine de reproductibilité \\
+    \texttt{MEAN}        & [0.485, 0.456, 0.406] & Moyenne ImageNet (R, G, B) \\
+    \texttt{STD}         & [0.229, 0.224, 0.225] & Écart-type ImageNet (R, G, B) \\
+    \bottomrule
+  \end{tabular}
+  \caption{Hyperparamètres du pipeline de prétraitement}
+\end{table}
+
+\subsection{Reproductibilité}
+
+La reproductibilité est assurée par la fixation de la graine aléatoire sur trois niveaux :
+
+\begin{lstlisting}[caption={Fixation des graines}]
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
+tf.random.set_seed(SEED)
+\end{lstlisting}
+
+\subsection{Détection du dispositif}
+
+Le script détecte automatiquement la présence d'un GPU et active la croissance dynamique de mémoire afin d'éviter les allocations excessives :
+
+\begin{lstlisting}[caption={Détection GPU et gestion mémoire}]
+gpus = tf.config.list_physical_devices("GPU")
+DEVICE = "GPU" if gpus else "CPU"
+if gpus:
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
+\end{lstlisting}
+
+
+\section{Architecture du Pipeline}
+\subsection{Vue d'ensemble}
+
+Le pipeline est structuré en dix étapes numérotées, de la gestion de la reproductibilité jusqu'à l'export de la configuration. La figure suivante illustre le flux de données.
+
+\begin{center}
+\begin{tikzpicture}[
+  node distance=0.6cm and 1.5cm,
+  every node/.style={font=\small},
+  box/.style={rectangle, rounded corners=4pt, draw=primary, fill=secondary,
+              minimum width=4.2cm, minimum height=0.7cm, align=center, text=darkgray},
+  arr/.style={-Stealth, thick, color=primary},
+  label/.style={font=\scriptsize\itshape, color=gray}
+]
+
+\node[box] (raw)   {Images brutes (256$\times$256)};
+\node[box, below=of raw]  (crop)  {Redimensionnement + Random Crop\\$224\times224$};
+\node[box, below=of crop] (norm)  {Normalisation $[0,1]$};
+\node[box, below=of norm] (aug)   {Augmentations géométriques\\(flip, rotation $\pm180°$)};
+\node[box, below=of aug]  (color) {Équilibrage couleur stochastique\\(WB, HistEq, ChannelShuffle)};
+\node[box, below=of color](jitter){Jitter couleur TF natif\\(brightness, contrast, saturation, hue)};
+\node[box, below=of jitter](gray) {Grayscale aléatoire ($p=0.1$)};
+\node[box, below=of gray] (imnorm){Normalisation ImageNet\\$\mu = [0.485, 0.456, 0.406]$};
+\node[box, below=of imnorm](out)  {Tenseur prêt à l'entraînement};
+
+\draw[arr] (raw)    -- (crop);
+\draw[arr] (crop)   -- (norm);
+\draw[arr] (norm)   -- (aug);
+\draw[arr] (aug)    -- (color);
+\draw[arr] (color)  -- (jitter);
+\draw[arr] (jitter) -- (gray);
+\draw[arr] (gray)   -- (imnorm);
+\draw[arr] (imnorm) -- (out);
+
+\end{tikzpicture}
+\end{center}
+
+\subsection{Deux modes de prétraitement}
+
+\begin{table}[H]
+  \centering
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Étape} & \textbf{Entraînement} & \textbf{Validation / Test} \\
+    \midrule
+    Redimensionnement (256$\times$256) & \checkmark & \checkmark \\
+    Random Crop (224$\times$224)       & \checkmark & \texttimes \\
+    Centre Crop (224$\times$224)       & \texttimes & \checkmark \\
+    Flip gauche/droite                 & \checkmark & \texttimes \\
+    Flip haut/bas                      & \checkmark & \texttimes \\
+    Rotation $\pm180°$                 & \checkmark & \texttimes \\
+    White Balance (stochastique, $p=0.5$) & \checkmark & \texttimes \\
+    White Balance (déterministe, $p=1.0$)& \texttimes & \checkmark \\
+    Hist. Equalization ($p=0.3$)       & \checkmark & \texttimes \\
+    Channel Shuffle ($p=0.15$)         & \checkmark & \texttimes \\
+    Jitter couleur                     & \checkmark & \texttimes \\
+    Grayscale ($p=0.1$)                & \checkmark & \texttimes \\
+    Normalisation ImageNet             & \checkmark & \checkmark \\
+    \bottomrule
+  \end{tabular}
+  \caption{Comparaison des deux pipelines de prétraitement}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Équilibrage des Couleurs}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{White Balance (Gray-World)}
+
+L'algorithme \textit{gray-world} suppose que la moyenne de tous les canaux doit être identique. La correction est :
+
+\[
+  \hat{I}_c = \text{clip}\!\left(\frac{\bar{\mu}}{\mu_c} \cdot I_c,\; 0,\; 1\right)
+  \quad \text{avec} \quad
+  \bar{\mu} = \frac{1}{3}\sum_{c \in \{R,G,B\}} \mu_c
+\]
+
+Le facteur d'échelle est borné dans $[0.5, 2.0]$ pour éviter des corrections excessives.
+
+\begin{lstlisting}[caption={Implémentation de la white balance gray-world}]
+def auto_white_balance_fn(image: tf.Tensor) -> tf.Tensor:
+    means       = tf.reduce_mean(image, axis=[0, 1])   # (3,)
+    global_mean = tf.reduce_mean(means)
+    scale       = tf.math.divide_no_nan(global_mean, means)
+    scale       = tf.clip_by_value(scale, 0.5, 2.0)
+    return tf.clip_by_value(image * scale, 0.0, 1.0)
+\end{lstlisting}
+
+\subsection{Égalisation d'Histogramme}
+
+L'égalisation d'histogramme est appliquée canal par canal via PIL/Pillow. L'opération est encapsulée dans \texttt{tf.py\_function} pour maintenir la compatibilité avec le mode graphe de TensorFlow :
+
+\begin{lstlisting}[caption={Égalisation d'histogramme via tf.py\_function}]
+def _hist_eq_numpy(image_tensor) -> np.ndarray:
+    image_np  = image_tensor.numpy()
+    img_uint8 = (image_np * 255).astype(np.uint8)
+    pil_img   = Image.fromarray(img_uint8)
+    r, g, b   = pil_img.split()
+    merged    = Image.merge("RGB", [ImageOps.equalize(c) for c in (r, g, b)])
+    return np.array(merged, dtype=np.float32) / 255.0
+\end{lstlisting}
+
+\subsection{Channel Shuffle}
+
+Une permutation aléatoire des canaux RGB est appliquée avec probabilité $p = 0.15$ pour augmenter la diversité de couleurs :
+
+\[
+  (R, G, B) \xrightarrow{\sigma \sim \text{Perm}(\{0,1,2\})} (C_{\sigma(0)}, C_{\sigma(1)}, C_{\sigma(2)})
+\]
+
+\subsection{Application Stochastique}
+
+Toutes ces fonctions sont appelées via un utilitaire \texttt{apply\_with\_prob} compatible avec le mode graphe (\texttt{tf.cond} au lieu d'un \texttt{if} Python) :
+
+\begin{lstlisting}[caption={Application conditionnelle graph-safe}]
+def apply_with_prob(image: tf.Tensor, fn, p: float) -> tf.Tensor:
+    return tf.cond(
+        tf.random.uniform(()) < p,
+        lambda: fn(image),
+        lambda: image,
+    )
+\end{lstlisting}
+
+\begin{table}[h!]
+  \centering
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Transformation couleur} & \textbf{Probabilité} & \textbf{Compatibilité graphe} \\
+    \midrule
+    White Balance (entraînement)  & 0.50 & \checkmark \\
+    Hist. Equalization            & 0.30 & \checkmark (\texttt{tf.py\_function}) \\
+    Channel Shuffle               & 0.15 & \checkmark (\texttt{tf.py\_function}) \\
+    \bottomrule
+  \end{tabular}
+  \caption{Transformations couleur et leur probabilité d'application}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Normalisation}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Normalisation ImageNet}
+
+La normalisation utilise les statistiques du dataset ImageNet, standard pour les modèles pré-entraînés :
+
+\[
+  \hat{x}_c = \frac{x_c - \mu_c}{\sigma_c}
+  \quad \text{avec} \quad
+  \mu = [0.485,\; 0.456,\; 0.406],\quad
+  \sigma = [0.229,\; 0.224,\; 0.225]
+\]
+
+La dénormalisation inverse est également disponible pour la visualisation :
+
+\[
+  x_c = \text{clip}(\hat{x}_c \cdot \sigma_c + \mu_c,\; 0,\; 1)
+\]
+
+\begin{lstlisting}[caption={Fonctions de normalisation et dénormalisation}]
+_MEAN_T = tf.constant([0.485, 0.456, 0.406], dtype=tf.float32)
+_STD_T  = tf.constant([0.229, 0.224, 0.225], dtype=tf.float32)
+
+def normalize_imagenet(image: tf.Tensor) -> tf.Tensor:
+    return (image - _MEAN_T) / _STD_T
+
+def denormalize_imagenet(image: tf.Tensor) -> tf.Tensor:
+    return tf.clip_by_value(image * _STD_T + _MEAN_T, 0.0, 1.0)
+\end{lstlisting}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Chargement et Construction des Datasets}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Structure des répertoires}
+
+\begin{verbatim}
+dataset_split/
+├── train/
+│   ├── ok/
+│   └── def/
+├── validation/
+│   ├── ok/
+│   └── def/
+└── test/
+    ├── ok/
+    └── def/
+\end{verbatim}
+
+\subsection{Chargement brut}
+
+\begin{lstlisting}[caption={Chargement des images depuis les dossiers}]
+def _load_raw(directory: str, shuffle: bool) -> tf.data.Dataset:
+    return tf.keras.utils.image_dataset_from_directory(
+        directory,
+        labels="inferred",
+        label_mode="int",
+        color_mode="rgb",
+        batch_size=None,       # batching apres .map()
+        image_size=(256, 256),
+        shuffle=shuffle,
+        seed=SEED,
+    )
+\end{lstlisting}
+
+\subsection{Pipelines \texttt{tf.data} finaux}
+
+\begin{lstlisting}[caption={Construction des pipelines optimisés tf.data}]
+train_dataset = (
+    raw_train
+    .map(preprocess_train, num_parallel_calls=AUTOTUNE)
+    .batch(BATCH_SIZE, drop_remainder=True)
+    .prefetch(AUTOTUNE)
+)
+
+val_dataset = (
+    raw_val
+    .map(preprocess_eval, num_parallel_calls=AUTOTUNE)
+    .batch(BATCH_SIZE)
+    .prefetch(AUTOTUNE)
+)
+\end{lstlisting}
+
+L'option \texttt{AUTOTUNE} délègue à TensorFlow le réglage automatique du parallélisme, ce qui maximise le débit de données sans intervention manuelle.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Gestion du Déséquilibre des Classes}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Le pipeline calcule automatiquement les poids de classes pour compenser un éventuel déséquilibre du dataset, en équivalence avec le \texttt{WeightedRandomSampler} de PyTorch :
+
+\[
+  w_i = \frac{N}{K \cdot n_i}
+\]
+
+où $N$ est le nombre total d'exemples, $K$ le nombre de classes, et $n_i$ le nombre d'exemples de la classe $i$.
+
+\begin{lstlisting}[caption={Calcul des poids de classes}]
+all_labels   = np.array([lbl.numpy() for _, lbl in raw_train])
+class_counts = np.bincount(all_labels, minlength=NUM_CLASSES)
+total        = len(all_labels)
+
+class_weights = {
+    i: float(total) / (NUM_CLASSES * int(count))
+    for i, count in enumerate(class_counts)
+}
+\end{lstlisting}
+
+Ces poids sont exportés dans la configuration et peuvent être passés à \texttt{model.fit(class\_weight=class\_weights)}.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Utilitaires de Diagnostic}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{\texttt{sanity\_check()}}
+
+Affiche la forme du batch, les valeurs min/max/moyenne des pixels après normalisation, et un échantillon de labels. Permet de vérifier rapidement l'intégrité du pipeline.
+
+\subsection{\texttt{show\_batch()}}
+
+Dénormalise et visualise un batch d'images avec matplotlib, en colorant le titre en \textcolor{defect}{rouge} pour les pièces défectueuses et en \textcolor{ok}{vert} pour les pièces saines.
+
+\subsection{\texttt{plot\_class\_distribution()}}
+
+Trace la distribution des classes (train / val / test) en histogramme avec annotation des effectifs. Sauvegardé en \texttt{class\_distribution.png}.
+
+\subsection{\texttt{compute\_mean\_std()}}
+
+Estime la moyenne et l'écart-type empiriques du dataset (sur $n$ batchs) pour vérifier l'adéquation avec les statistiques ImageNet utilisées.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Export de la Configuration}
+% ─────────────────────────────────────────────────────────────────────────────
+
+L'ensemble des paramètres est exporté au format JSON pour assurer la traçabilité et la reproductibilité entre notebooks :
+
+\begin{lstlisting}[caption={Dictionnaire de configuration exporté}]
+CONFIG = {
+    "img_size"     : 224,
+    "batch_size"   : 32,
+    "num_classes"  : 2,
+    "class_names"  : class_names,
+    "class_to_idx" : class_to_idx,
+    "mean"         : [0.485, 0.456, 0.406],
+    "std"          : [0.229, 0.224, 0.225],
+    "seed"         : 42,
+    "device"       : DEVICE,
+    "class_weights": {...},
+}
+\end{lstlisting}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Compatibilité Graph et Points Techniques}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{infobox}[Choix architectural clé : \texttt{tf.cond} vs \texttt{if} Python]
+  TensorFlow en mode graphe (\texttt{tf.data.Dataset.map}) trace les opérations. Un \texttt{if} Python est évalué \textbf{une seule fois} à la compilation du graphe — pas à chaque image. L'utilisation de \texttt{tf.cond} garantit une évaluation \textbf{dynamique} à chaque appel, ce qui est essentiel pour les augmentations stochastiques.
+\end{infobox}
+
+\begin{table}[h!]
+  \centering
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{p{5cm}p{8cm}}
+    \toprule
+    \textbf{Situation} & \textbf{Solution adoptée} \\
+    \midrule
+    Branchement conditionnel aléatoire & \texttt{tf.cond} \\
+    Opérations NumPy/PIL dans le graphe & \texttt{tf.py\_function} avec \texttt{.numpy()} \\
+    Rotation d'image & \texttt{tensorflow\_addons.image.rotate} (fallback : identité) \\
+    Mémorisation de la forme & \texttt{result.set\_shape([None, None, 3])} après \texttt{tf.py\_function} \\
+    \bottomrule
+  \end{tabular}
+  \caption{Solutions techniques pour la compatibilité graph}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Utilisation dans un Notebook Modèle}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{lstlisting}[caption={Import du module depuis un autre notebook}]
+import sys
+sys.path.insert(0, "/content/gdrive/MyDrive/finalproject_DL")
+
+from preprocessing_tf import (
+    train_dataset, val_dataset, test_dataset,
+    class_names, class_to_idx, class_weights,
+    NUM_CLASSES, MEAN, STD, DEVICE, CONFIG
+)
+\end{lstlisting}
+
+Les objets exportés permettent une intégration directe avec \texttt{model.fit()} :
+
+\begin{lstlisting}[caption={Entraînement avec les datasets prétraités}]
+model.fit(
+    train_dataset,
+    validation_data=val_dataset,
+    epochs=30,
+    class_weight=class_weights
+)
+\end{lstlisting}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Conclusion}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Le pipeline de prétraitement présenté est un module autonome, réutilisable et robuste pour la classification de défauts de pièces de fonderie. Ses points forts sont :
+
+\begin{itemize}
+  \item \textbf{Reproductibilité} : graines fixées sur tous les générateurs aléatoires.
+  \item \textbf{Compatibilité graph} : usage systématique de \texttt{tf.cond} et \texttt{tf.py\_function}.
+  \item \textbf{Richesse des augmentations} : géométriques, couleur, et photométriques, chacune avec sa propre probabilité.
+  \item \textbf{Équilibrage des classes} : calcul automatique des poids pour contrebalancer les déséquilibres.
+  \item \textbf{Performance I/O} : pipeline \texttt{tf.data} avec parallélisme et prefetching automatiques (\texttt{AUTOTUNE}).
+  \item \textbf{Traçabilité} : export de la configuration complète au format JSON.
+\end{itemize}
+
+Ce module est conçu pour être directement importé dans tout notebook d'entraînement, garantissant un prétraitement cohérent entre les expériences.
+
