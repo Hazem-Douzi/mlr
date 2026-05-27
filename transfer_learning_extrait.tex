@@ -1,146 +1,21 @@
 % =====================================================================
-%  EXTRAIT : Transfer Learning → Conclusion générale
-%  Système Intelligent de Contrôle Qualité des Impellers
-%  Filière BDIA1 - Année universitaire 2025-2026
+%  Modele 3 (Transfer Learning) -> Evaluation -> Comparaison -> Conclusion
+%  Systeme Intelligent de Controle Qualite des Impellers
+%  Filiere BDIA1 - Annee universitaire 2025-2026
+%
+%  NOTE : ce fichier est concu pour etre inclus via \input{} depuis
+%         main.tex. Toute la configuration globale (packages, couleurs,
+%         infobox, etc.) est deja definie dans main.tex.
 % =====================================================================
-\documentclass[12pt,a4paper,openany]{report}
-
-% ---------- Encoding & langue ----------
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage[french]{babel}
-\usepackage{lmodern}
-\usepackage{microtype}
-
-% ---------- Mise en page ----------
-\usepackage[a4paper,margin=2.5cm,headheight=15pt]{geometry}
-\usepackage{setspace}
-\onehalfspacing
-\usepackage{parskip}
-\usepackage{fancyhdr}
-\usepackage{titlesec}
-\usepackage{enumitem}
-\setlist{itemsep=2pt,topsep=4pt}
-
-% ---------- Graphiques & tableaux ----------
-\usepackage{graphicx}
-\usepackage{float}
-\usepackage{caption}
-\usepackage{subcaption}
-\captionsetup{font=small,labelfont=bf}
-\graphicspath{{images/}}
-\usepackage{array}
-\usepackage{booktabs}
-\usepackage{longtable}
-\usepackage{tabularx}
-\usepackage{multirow}
-\usepackage{makecell}
-
-% ---------- Couleurs ----------
-\usepackage[dvipsnames]{xcolor}
-\definecolor{primary}{RGB}{0,90,160}
-\definecolor{accent}{RGB}{200,80,30}
-\definecolor{softgray}{RGB}{240,240,245}
-\definecolor{codebg}{RGB}{248,248,248}
-\definecolor{codekw}{RGB}{0,90,160}
-\definecolor{codestr}{RGB}{170,55,30}
-\definecolor{codecmt}{RGB}{100,110,100}
-
-% ---------- Boites ----------
-\usepackage[most]{tcolorbox}
-\newtcolorbox{infobox}[1][]{enhanced,colback=softgray,colframe=primary,
-  fonttitle=\bfseries,coltitle=white,colbacktitle=primary,
-  boxrule=0.4pt,arc=2pt,left=8pt,right=8pt,top=4pt,bottom=4pt,#1}
-\newtcolorbox{warnbox}[1][]{enhanced,colback=accent!8,colframe=accent,
-  fonttitle=\bfseries,coltitle=white,colbacktitle=accent,
-  boxrule=0.4pt,arc=2pt,left=8pt,right=8pt,top=4pt,bottom=4pt,#1}
-
-% ---------- Code ----------
-\usepackage{listings}
-\lstdefinestyle{pystyle}{
-  language=Python,
-  backgroundcolor=\color{codebg},
-  basicstyle=\ttfamily\footnotesize,
-  keywordstyle=\color{codekw}\bfseries,
-  stringstyle=\color{codestr},
-  commentstyle=\color{codecmt}\itshape,
-  numbers=left, numberstyle=\tiny\color{gray}, numbersep=6pt,
-  frame=single, rulecolor=\color{gray!40},
-  breaklines=true, breakatwhitespace=true,
-  showstringspaces=false,
-  tabsize=2, captionpos=b,
-  literate=
-    {é}{{\'e}}1 {è}{{\`e}}1 {ê}{{\^e}}1 {à}{{\`a}}1 {â}{{\^a}}1
-    {î}{{\^\i}}1 {ô}{{\^o}}1 {ù}{{\`u}}1 {û}{{\^u}}1 {ç}{{\c c}}1
-    {É}{{\'E}}1 {È}{{\`E}}1 {Ê}{{\^E}}1 {À}{{\`A}}1 {œ}{{\oe}}1
-}
-\lstset{style=pystyle}
-
-% ---------- Mathématiques ----------
-\usepackage{amsmath,amssymb,amsfonts}
-
-% ---------- Acronymes ----------
-\usepackage[acronym,nonumberlist,toc]{glossaries}
-\makeglossaries
-
-\newacronym{ia}{IA}{Intelligence Artificielle}
-\newacronym{dl}{DL}{Deep Learning (apprentissage profond)}
-\newacronym{ml}{ML}{Machine Learning (apprentissage automatique)}
-\newacronym{cnn}{CNN}{Convolutional Neural Network}
-\newacronym{mlp}{MLP}{Multi-Layer Perceptron}
-\newacronym{tl}{TL}{Transfer Learning (apprentissage par transfert)}
-\newacronym{cv}{CV}{Computer Vision}
-\newacronym{qc}{QC}{Quality Control (contrôle qualité)}
-\newacronym{cao}{CAO}{Conception Assistée par Ordinateur}
-\newacronym{relu}{ReLU}{Rectified Linear Unit}
-\newacronym{bn}{BN}{Batch Normalization}
-\newacronym{sgd}{SGD}{Stochastic Gradient Descent}
-\newacronym{lr}{LR}{Learning Rate (taux d'apprentissage)}
-\newacronym{auc}{AUC}{Area Under the Curve}
-\newacronym{roc}{ROC}{Receiver Operating Characteristic}
-\newacronym{tpr}{TPR}{True Positive Rate}
-\newacronym{fpr}{FPR}{False Positive Rate}
-\newacronym{fn}{FN}{Faux Negatif}
-\newacronym{fp}{FP}{Faux Positif}
-\newacronym{ap}{AP}{Average Precision}
-\newacronym{api}{API}{Application Programming Interface}
-\newacronym{gpu}{GPU}{Graphics Processing Unit}
-\newacronym{cpu}{CPU}{Central Processing Unit}
-\newacronym{rgb}{RGB}{Red Green Blue}
-\newacronym{tf}{TF}{TensorFlow}
-\newacronym{tflite}{TFLite}{TensorFlow Lite}
-
-% ---------- Hyperliens ----------
-\usepackage[hidelinks,colorlinks=true,linkcolor=primary,urlcolor=primary,citecolor=accent]{hyperref}
-
-% ---------- Style des chapitres / sections ----------
-\titleformat{\chapter}[hang]{\Huge\bfseries\color{primary}}{\thechapter.}{1em}{}
-\titlespacing*{\chapter}{0pt}{-20pt}{20pt}
-\titleformat{\section}{\Large\bfseries\color{primary}}{\thesection}{0.6em}{}
-\titleformat{\subsection}{\large\bfseries\color{accent}}{\thesubsection}{0.5em}{}
-
-% ---------- En-tête / pied de page ----------
-\pagestyle{fancy}
-\fancyhf{}
-\renewcommand{\headrulewidth}{0.4pt}
-\renewcommand{\footrulewidth}{0pt}
-\fancyhead[L]{\small\textit{Contrôle Qualité Intelligent des Impellers}}
-\fancyhead[R]{\small\textit{BDIA1 - 2025/2026}}
-\fancyfoot[C]{\thepage}
 
 % =====================================================================
-\begin{document}
+%  CHAPITRE 4 - Modele 3 : Transfer Learning avec EfficientNetB0
+% =====================================================================
+\chapter{Modèle 3 : Transfer Learning avec EfficientNetB0}
 
-% Numérotation continue depuis le document principal
-\setcounter{chapter}{5}   % Chapitres 1-5 déjà écrits
-\setcounter{section}{2}   % Sections 6.1 (MLP) et 6.2 (CNN) déjà écrites
+\section{Principe du Transfer Learning}
 
-% --------------------------------------------------------- TL
-\section{Modèle 3 : Transfer Learning avec EfficientNetB0}
-
-\subsection{Principe du Transfer Learning}
-
-Le \emph{Transfer Learning} (\gls{tl}, apprentissage par transfert) consiste a \textbf{reutiliser un réseau de neurones déjà entraîne} sur une grande base d'images --- ici \textsc{ImageNet}, qui contient $\sim 1{,}2$ million d'images réparties sur $1\,000$ classes --- pour résoudre un nouveau problème plus spécifique. Ce paradigme exploite le fait que les premières couches d'un CNN apprennent des concepts visuels \emph{génériques} (contours, textures, formes) qui sont \emph{transférables} a presque toutes les tâches d'images naturelles.
+Le \emph{Transfer Learning} (TL, apprentissage par transfert) consiste a \textbf{reutiliser un réseau de neurones déjà entraîne} sur une grande base d'images --- ici \textsc{ImageNet}, qui contient $\sim 1{,}2$ million d'images réparties sur $1\,000$ classes --- pour résoudre un nouveau problème plus spécifique. Ce paradigme exploite le fait que les premières couches d'un CNN apprennent des concepts visuels \emph{génériques} (contours, textures, formes) qui sont \emph{transférables} a presque toutes les tâches d'images naturelles.
 
 \begin{figure}[H]
     \centering
@@ -152,7 +27,7 @@ Le \emph{Transfer Learning} (\gls{tl}, apprentissage par transfert) consiste a \
 \paragraph{Lecture de la figure~\ref{fig:tlprinciple}.}
 Le schéma illustre le mécanisme de transfert~: a gauche, un réseau profond pre-entraîne sur ImageNet à déjà appris à extraire des features riches sur 1\,000 catégories de la vie courante. A droite, ce même réseau (ou ses premières couches) est reutilise comme \emph{extracteur de features} sur notre problème cible (détection de défauts), ne necessitant que l'apprentissage d'une nouvelle tête de classification spécifique. Le gain est double~: convergence plus rapide \emph{et} meilleure généralisation, car le réseau beneficie de millions d'images d'entraînement initiales.
 
-\subsection{Stratégie en deux phases}
+\section{Stratégie en deux phases}
 
 Notre stratégie de Transfer Learning suit le schéma canonique en \textbf{deux phases successives}~:
 
@@ -187,7 +62,7 @@ Notre stratégie de Transfer Learning suit le schéma canonique en \textbf{deux 
 \paragraph{Lecture de la figure~\ref{fig:tlbackbone}.}
 Le schéma montre la transformation opérée sur le réseau pre-entraîne~: on \textbf{conserve} les couches convolutives (qui constituent l'extracteur de features générique) et on \textbf{remplacé} la tête originale, prévue pour 1\,000 classes ImageNet, par une nouvelle tête adaptée à notre problème binaire. Le \emph{backbone} reste fige durant la phase 1.
 
-\subsection{Architecture choisie : EfficientNetB0}
+\section{Architecture choisie : EfficientNetB0}
 
 \textsc{EfficientNet} \cite{tan2019efficientnet} est une famille d'architectures développée par Google en 2019, dont la spécificité est de \textbf{coupler haute performance et faible coût de calcul} grace au \emph{compound scaling} déjà décrit dans l'état de l'art (chapitre 2). Le modèle \textsc{EfficientNetB0}, a la base de la famille, compte 5{,}3 millions de paramètres et atteint $77{,}3\%$ de top-1 accuracy sur ImageNet --- excellent compromis pour le Transfer Learning sur dataset modéré.
 
@@ -201,7 +76,7 @@ Le schéma montre la transformation opérée sur le réseau pre-entraîne~: on \
 \paragraph{Lecture de la figure~\ref{fig:efficientnet}.}
 L'architecture s'articule autour de blocs \textsc{MBConv} (\emph{Mobile Inverted Bottleneck}) avec mécanismes \emph{Squeeze-and-Excitation}. La séquence de blocs alterne diverses tailles de filtres ($3\times 3$, $5\times 5$) et facteurs d'expansion. La fin du backbone produit un tenseur de features dimensionne $7\times 7\times 1280$, qui sera ensuite condensé par un \emph{Global Average Pooling} avant d'entrer dans la tête de classification.
 
-\subsection{Source des données et preparation}
+\section{Source des données et preparation}
 
 Le dataset utilisé pour cette expérience est la \textbf{version augmentée} fournie directement par l'auteur sur Kaggle, déjà adaptée aux contraintes industrielles (variations d'éclairage, angles, textures de surface). Notre prétraitement se limite donc au redimensionnement et à la normalisation requise par EfficientNetB0.
 
@@ -228,7 +103,7 @@ Keras lit automatiquement l'arborescence \texttt{train/ok\_front/} et \texttt{tr
 \paragraph{Lecture de la figure~\ref{fig:loadcode}.}
 Le code utilisé \texttt{tf.keras.preprocessing.image\_dataset\_from\_directory} pour le chargement automatique, suivi de \texttt{efficientnet.preprocess\_input} pour la normalisation. Cette approche \emph{declarative} réduit le risque d'erreurs de prétraitement et garantit la cohérence avec les attentes du backbone pre-entraîne.
 
-\subsection{Hyperparamètres}
+\section{Hyperparamètres}
 
 \begin{figure}[H]
     \centering
@@ -240,7 +115,7 @@ Le code utilisé \texttt{tf.keras.preprocessing.image\_dataset\_from\_directory}
 \paragraph{Lecture de la figure~\ref{fig:hyperparams}.}
 Les hyperparamètres distinguent clairement les deux phases~: la phase 1 utilisé un \emph{learning rate} relativement élevé ($10^{-3}$) car seule la tête de classification est entraînée --- elle peut supporter un grand pas d'apprentissage. La phase 2, en revanche, utilisé un LR très faible ($10^{-5}$) pour ajuster finement les filtres pre-entraînés sans les détruire. Ce choix d'un LR trois ordres de grandeur plus petit est la \textbf{règle d'or} du fine-tuning.
 
-\subsection{Construction du modèle}
+\section{Construction du modèle}
 
 On conserve le \emph{backbone} EfficientNetB0 sans son classificateur d'origine, et on le \textbf{verrouille} (\texttt{trainable = False}) pour préserver le savoir acquis sur ImageNet. Les cartes de caractéristiques sont condensées par un \emph{Global Average Pooling}, suivies d'un \texttt{Dropout} pour la régularisation, et d'une couche \texttt{Dense(1)} avec activation \emph{sigmoid} pour la prédiction binaire.
 
@@ -261,11 +136,11 @@ On conserve le \emph{backbone} EfficientNetB0 sans son classificateur d'origine,
 \paragraph{Lecture de la figure~\ref{fig:tlbuild}.}
 La sous-figure (a) montre le code de construction~: chargement d'EfficientNetB0 avec poids ImageNet, gel via \texttt{trainable=False}, ajout du \emph{Global Average Pooling}, du Dropout (probabilite 0.3) et de la couche Dense finale à activation sigmoid. La sous-figure (b) présente la sortie de \texttt{model.summary()}, confirmant le nombre de paramètres entrainables très réduit en phase 1 (de l'ordre du millier seulement).
 
-\subsection{Phase 1 : Extraction de caractéristiques}
+\section{Phase 1 : Extraction de caractéristiques}
 
 Seule la tête de classification est entraînée ($1\,280$ paramètres entrainables). Les résultats sont déjà excellents~:
 
-\begin{infobox}[title=Phase 1 - Résultats]
+\begin{infobox}[Phase 1 - Résultats]
 \texttt{accuracy}\,:\,$0{,}9749$ \quad|\quad \texttt{auc}\,:\,$0{,}9957$ \quad|\quad \texttt{loss}\,:\,$0{,}0924$\\
 \texttt{val\_accuracy}\,:\,$0{,}9900$ \quad|\quad \texttt{val\_auc}\,:\,$0{,}9963$ \quad|\quad \texttt{val\_loss}\,:\,$0{,}0625$
 \end{infobox}
@@ -282,11 +157,11 @@ Les logs montrent une convergence \textbf{remarquablement rapide}~: des l'epoque
 
 \paragraph{Point clé.} La \emph{val\_accuracy} ($99\%$) est \textbf{supérieure} a l'\emph{accuracy} de train ($97{,}5\%$) --- signe que le modèle \emph{généralisé} très bien et ne sur-apprend pas. Ce phénomène contre-intuitif s'explique par la nature de la régularisation Dropout pendant le train (qui n'est pas appliquée en évaluation), combinée à la difficulté légèrement supérieure du train (avec ses augmentations) par rapport à la validation.
 
-\subsection{Phase 2 : Fine-tuning}
+\section{Phase 2 : Fine-tuning}
 
 Après la phase 1, on procédé au \emph{fine-tuning}~: les premières couches detectent des concepts très généraux (bords, couleurs) --- on les garde intactes. On \textbf{dégelé} les derniers blocs MBConv (features de haut niveau) et on entraîne avec un \emph{learning rate} très faible pour ajuster finement les filtres pre-entraînés sans les détruire. Environ $2$ millions de paramètres deviennent entrainables.
 
-\begin{infobox}[title=Phase 2 - Résultats]
+\begin{infobox}[Phase 2 - Résultats]
 \texttt{accuracy}\,:\,$0{,}9940$ \quad|\quad \texttt{auc}\,:\,$0{,}9992$ \quad|\quad \texttt{loss}\,:\,$0{,}0232$\\
 \texttt{val\_accuracy}\,:\,$0{,}9930$ \quad|\quad \texttt{val\_auc}\,:\,$0{,}9997$ \quad|\quad \texttt{val\_loss}\,:\,$0{,}0192$
 \end{infobox}
@@ -301,7 +176,7 @@ Après la phase 1, on procédé au \emph{fine-tuning}~: les premières couches d
 \paragraph{Lecture de la figure~\ref{fig:phase2logs}.}
 Les logs de la phase 2 montrent une amélioration plus lente mais reguliere~: chaque epoque apporte un gain marginal mais réel. L'\emph{Early Stopping} se declenche après environ 8-10 epoques. \textbf{Le bilan~: $+1{,}9\%$ d'accuracy ($97{,}5\%$ $\to$ $99{,}4\%$) et la val\_loss divisée par $\sim 3$ (de $0{,}0625$ a $0{,}0192$).} Le fine-tuning apporte donc un gain mesurable et reproductible.
 
-\subsection{Courbes d'entraînement consolidées}
+\section{Courbes d'entraînement consolidées}
 
 \begin{figure}[H]
     \centering
@@ -316,11 +191,11 @@ Cette figure synthétique met en évidence plusieurs faits clés~:
     \item L'\emph{accuracy} de validation monte rapidement, la \emph{loss} chute~: les features ImageNet se transfèrent très bien.
     \item Les courbes \emph{train} et \emph{validation} restent proches~: \textbf{absence de sur-apprentissage}.
     \item La transition Phase~1 $\to$ Phase~2 est visible (rupture de pente vers l'epoque ${\sim}10$) et apporte un gain mesurable.
-    \item L'\gls{auc} approche $0{,}99$~: pour deux images tirées au hasard (une défectueuse, une OK), le modèle les separe presque parfaitement --- performance excellente pour le contrôle qualité industriel.
+    \item L'AUC approche $0{,}99$~: pour deux images tirées au hasard (une défectueuse, une OK), le modèle les separe presque parfaitement --- performance excellente pour le contrôle qualité industriel.
 \end{itemize}
 
 % =====================================================================
-%  CHAPITRE 7 - EVALUATION FINALE
+%  CHAPITRE 5 - Evaluation finale et discussion
 % =====================================================================
 \chapter{Évaluation finale et discussion}
 
@@ -367,7 +242,7 @@ F_1 &= 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \t
 \paragraph{Lecture de la figure~\ref{fig:report}.}
 La sous-figure (a) présente le \texttt{classification\_report} de scikit-learn~: pour chaque classe, la précision, le recall et le F1-score sont indiques, ainsi que le \emph{support} (nombre d'échantillons). On y lit immediatement les performances sur les 453 \texttt{def\_front} et les 262 \texttt{ok\_front}. La sous-figure (b) condensé le score global~: $99{,}44\%$ d'accuracy moyenne, confirmant l'excellence du modèle.
 
-\begin{infobox}[title=Métriques industrielles clés - Phase 2]
+\begin{infobox}[Métriques industrielles clés - Phase 2]
 \textbf{Precision sur \texttt{def\_front}~: $99{,}78\%$}\\
 $\Rightarrow$ Quand le modèle dit \og défectueux \fg, il a raison dans $99{,}78\%$ des cas --- très peu de fausses alertes (donc peu d'arrets de production inutiles).\\[6pt]
 \textbf{Recall sur \texttt{def\_front}~: $99{,}34\%$}\\
@@ -376,7 +251,7 @@ $\Rightarrow$ C'est \textbf{LA} métrique critique en contrôle qualité. Un fau
 
 \subsection{Asymétrie des coûts d'erreur}
 
-En contrôle qualité industriel, les coûts associés aux faux négatifs (\gls{fn}) et aux faux positifs (\gls{fp}) sont profondément \emph{asymétriques}~:
+En contrôle qualité industriel, les coûts associés aux faux négatifs (FN) et aux faux positifs (FP) sont profondément \emph{asymétriques}~:
 \begin{itemize}
     \item Un \textbf{faux négatif} (défaut non détecté) entraîne la livraison d'une pièce défectueuse~: défaillance en service, retours sous garantie, atteinte à la reputation, voire risques de securite. \textbf{Coût potentiel~: très élevé, parfois plusieurs milliers d'euros.}
     \item Un \textbf{faux positif} (pièce saine rejetée) entraîne au pire un contrôle manuel supplémentaire ou un retraitement. \textbf{Coût~: limite, de l'ordre de la minute d'opérateur.}
@@ -438,7 +313,32 @@ L'analyse visuelle des erreurs revele plusieurs patterns~:
     \item La présence de probabilites proches de 0,5 dans les deux catégories d'erreurs suggere que ces cas appartiennent à une \emph{zone d'incertitude} commune --- ce qui ouvre la voie à des stratégies d'\emph{active learning} ou de \emph{contrôle humain en boucle} pour les cas ambigus.
 \end{itemize}
 
-\section{Comparaison globale des trois modèles}
+\section{Discussion industrielle}
+
+\subsection{Adequation au déploiement}
+
+Le modèle final présente plusieurs propriétés qui le rendent adapté à un déploiement industriel~:
+\begin{itemize}
+    \item \textbf{Performance suffisante}~: $99{,}44\%$ d'accuracy sur le test set, recall de $99{,}34\%$ sur la classe défectueuse.
+    \item \textbf{Inference rapide}~: EfficientNetB0 traite une image $224\times224$ en $\sim 5$\,ms sur un GPU moderne, $\sim 50$\,ms sur CPU --- compatible avec une cadence de production typique de 5 a 10 pièces par seconde.
+    \item \textbf{Taille modeste}~: $\sim 5$ Mo après conversion en TFLite, deployable sur Edge devices (Raspberry Pi 4, Jetson Nano).
+    \item \textbf{Robustesse}~: les augmentations utilisées lors du prétraitement assurent une certaine invariance aux variations d'éclairage et d'angle.
+\end{itemize}
+
+\subsection{Limites résiduelles}
+
+Plusieurs limites doivent être honnetement reconnues~:
+\begin{itemize}
+    \item Le dataset utilisé est un dataset \emph{public}, pris dans des conditions standardisées~; un déploiement réel exigerait une \emph{validation in-situ} avec des images d'usine.
+    \item La classification est \emph{binaire}~: le modèle dit \og défectueux \fg\ ou \og conforme \fg\ mais ne distingue pas le \emph{type} de défaut (fissure vs déformation vs bavure), information pourtant utile pour le diagnostic du procédé.
+    \item Le modèle ne \emph{localise} pas le défaut~: il ne peut pas indiquer ou se trouve l'anomalie dans l'image, ce qui limite l'interprétabilité et le diagnostic.
+    \item Les rares faux négatifs subsistants concernent des défauts subtils~: une intégration en \emph{boucle humaine} pour les cas ambigus serait souhaitable.
+\end{itemize}
+
+% =====================================================================
+%  CHAPITRE 6 - Comparaison globale des trois modeles
+% =====================================================================
+\chapter{Comparaison globale des trois modèles}
 
 Le tableau~\ref{tab:comparison} synthétise les performances comparées des trois modèles développés.
 
@@ -460,30 +360,19 @@ Paramètres                 & ${\sim}77$M    & ${\sim}1$--$5$M        & ${\sim}5
 \label{tab:comparison}
 \end{table}
 
-\section{Discussion industrielle}
-
-\subsection{Adequation au déploiement}
-
-Le modèle final présente plusieurs propriétés qui le rendent adapté à un déploiement industriel~:
+\paragraph{Synthèse de la progression.}
+La démarche en trois étapes met en évidence l'apport décisif du Transfer Learning~:
 \begin{itemize}
-    \item \textbf{Performance suffisante}~: $99{,}44\%$ d'accuracy sur le test set, recall de $99{,}34\%$ sur la classe défectueuse.
-    \item \textbf{Inference rapide}~: EfficientNetB0 traite une image $224\times224$ en $\sim 5$\,ms sur un GPU moderne, $\sim 50$\,ms sur CPU --- compatible avec une cadence de production typique de 5 a 10 pièces par seconde.
-    \item \textbf{Taille modeste}~: $\sim 5$ Mo après conversion en \gls{tflite}, deployable sur Edge devices (Raspberry Pi 4, Jetson Nano).
-    \item \textbf{Robustesse}~: les augmentations utilisées lors du prétraitement assurent une certaine invariance aux variations d'éclairage et d'angle.
+    \item Le \textbf{MLP} (chapitre précédent) sert de baseline et plafonne à $\sim 68\%$ d'accuracy~: il ignore la structure spatiale des images et n'extrait que des relations globales pixel-à-pixel.
+    \item Le \textbf{CNN} avec data augmentation atteint $\sim 95\%$ grâce à la convolution (invariance par translation, hierarchie de features) et à l'augmentation qui élimine le sur-apprentissage.
+    \item L'\textbf{EfficientNetB0 + Transfer Learning} pousse les performances à $99{,}44\%$ avec un coût d'entraînement très réduit, validant définitivement le choix d'un backbone pré-entraîne sur ImageNet.
 \end{itemize}
 
-\subsection{Limites résiduelles}
-
-Plusieurs limites doivent être honnetement reconnues~:
-\begin{itemize}
-    \item Le dataset utilisé est un dataset \emph{public}, pris dans des conditions standardisées~; un déploiement réel exigerait une \emph{validation in-situ} avec des images d'usine.
-    \item La classification est \emph{binaire}~: le modèle dit \og défectueux \fg\ ou \og conforme \fg\ mais ne distingue pas le \emph{type} de défaut (fissure vs déformation vs bavure), information pourtant utile pour le diagnostic du procédé.
-    \item Le modèle ne \emph{localise} pas le défaut~: il ne peut pas indiquer ou se trouve l'anomalie dans l'image, ce qui limite l'interprétabilité et le diagnostic.
-    \item Les rares faux négatifs subsistants concernent des défauts subtils~: une intégration en \emph{boucle humaine} pour les cas ambigus serait souhaitable.
-\end{itemize}
+\paragraph{Lecture verticale du tableau.}
+Au-delà de l'accuracy, le tableau met en lumière trois indicateurs souvent négligés~: le recall sur la classe défectueuse (la métrique critique en QC industriel), la présence ou non de sur-apprentissage, et le coût d'entraînement. C'est sur ce dernier point que le Transfer Learning tire son avantage le plus stratégique~: la phase 1 entraîne moins de $1\,300$ paramètres, ce qui permet une convergence très rapide même sans GPU haut de gamme.
 
 % =====================================================================
-%  CHAPITRE 8 - CONCLUSION
+%  CHAPITRE 7 - Conclusion generale et perspectives
 % =====================================================================
 \chapter{Conclusion générale et perspectives}
 
@@ -493,9 +382,9 @@ Au terme de ce projet, nous avons conçu, implémenté, entraîne et évalué un
 
 La démarche méthodologique progressive --- du Perceptron Multi-Couches au Transfer Learning sur EfficientNetB0 --- a permis de mettre en évidence empiriquement la valeur ajoutée de chaque famille architecturale. Les résultats obtenus depassent les attentes initiales~: avec seulement $\sim 6\,600$ images d'entraînement et un GPU Colab, nous avons atteint \textbf{$99{,}44\%$ d'accuracy} et un \textbf{AUC de $0{,}9993$} sur l'ensemble de test, avec un \emph{recall} de \textbf{$99{,}34\%$} sur la classe défectueuse. Sans Transfer Learning, atteindre la même performance aurait nécessité des dizaines de milliers d'images et plusieurs jours d'entraînement.
 
-\begin{infobox}[title=Apports du projet]
+\begin{infobox}[Apports du projet]
 \begin{itemize}
-    \item \textbf{Pipeline cross-framework}~: implémentation double TensorFlow et PyTorch, garantissant portabilite et reproductibilité.
+    \item \textbf{Pipeline cross-framework}~: implémentation double TensorFlow et PyTorch, garant de la reproductibilité.
     \item \textbf{Démarche pédagogique progressive}~: MLP $\to$ CNN $\to$ Transfer Learning, chaque étape motivant la suivante.
     \item \textbf{Modèle final compatible déploiement temps réel}~: $<10$\,ms d'inference, $<5$\,Mo de taille post-quantification.
     \item \textbf{Recall de $99{,}34\%$ sur la classe défectueuse}~: compatible avec les exigences industrielles de QC.
@@ -529,7 +418,7 @@ Plusieurs pistes peuvent être explorées pour aller plus loin~:
 \subsection{Industrialisation}
 
 \begin{itemize}
-    \item \textbf{Deploiement embarque}~: quantification \texttt{int8} et export vers \gls{tflite} pour exécution sur Raspberry Pi, Jetson Nano ou Edge TPU en bord de ligne. Reduction mémoire et accélération sans perte significative de performance.
+    \item \textbf{Deploiement embarque}~: quantification \texttt{int8} et export vers TFLite pour exécution sur Raspberry Pi, Jetson Nano ou Edge TPU en bord de ligne. Reduction mémoire et accélération sans perte significative de performance.
     \item \textbf{Intégration en ligne}~: connexion à un système MES (Manufacturing Execution System) pour rejet automatique des pièces défectueuses, traçabilite, statistiques temps réel.
     \item \textbf{Robustesse industrielle}~: collecte d'images réelles de l'usine pour validation \emph{in-situ} et fine-tuning final sur ce dataset spécifique.
 \end{itemize}
@@ -550,5 +439,3 @@ A plus long terme, ce système de contrôle qualité peut s'intégrer dans une d
     \item \textbf{Jumeau numérique}~: intégration au jumeau numérique de la ligne pour simulation et optimisation conjointe.
     \item \textbf{Maintenance predictive}~: identification de signatures de défauts annoncant une usure de moule ou un dereglage de la chaîne de coulée.
 \end{itemize}
-
-\end{document}
