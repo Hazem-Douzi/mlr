@@ -195,9 +195,9 @@ Cette figure synthétique met en évidence plusieurs faits clés~:
 \end{itemize}
 
 % =====================================================================
-%  CHAPITRE 5 - Evaluation finale et discussion
+%  Suite du chapitre Modele 3 : Evaluation finale et discussion
+%  (les sections suivantes restent dans le chapitre "Modele 3")
 % =====================================================================
-\chapter{Évaluation finale et discussion}
 
 \section{Protocole d'évaluation}
 
@@ -335,107 +335,3 @@ Plusieurs limites doivent être honnetement reconnues~:
     \item Les rares faux négatifs subsistants concernent des défauts subtils~: une intégration en \emph{boucle humaine} pour les cas ambigus serait souhaitable.
 \end{itemize}
 
-% =====================================================================
-%  CHAPITRE 6 - Comparaison globale des trois modeles
-% =====================================================================
-\chapter{Comparaison globale des trois modèles}
-
-Le tableau~\ref{tab:comparison} synthétise les performances comparées des trois modèles développés.
-
-\begin{table}[H]
-\centering
-\begin{tabular}{lccc}
-\toprule
-\textbf{Métrique} & \textbf{MLP} & \textbf{CNN} & \textbf{EfficientNetB0 (TL)} \\
-\midrule
-Accuracy (test)            & $68{,}02\%$ & $\sim 95\%^\dagger$ & $\mathbf{99{,}44\%}$ \\
-AUC                        & ---           & ---                   & $\mathbf{0{,}9993}$    \\
-Recall \texttt{def\_front} & $\sim 68\%$ & ---                   & $\mathbf{99{,}34\%}$ \\
-Sur-apprentissage          & Faible        & Present (corrige)     & \textbf{Aucun}         \\
-Coût d'entraînement        & Faible        & Modéré                & Faible (\emph{frozen}) \\
-Paramètres                 & ${\sim}77$M    & ${\sim}1$--$5$M        & ${\sim}5{,}3$M (dont 1{,}3K en P1) \\
-\bottomrule
-\end{tabular}
-\caption{Comparatif des trois approches. ${}^\dagger$~après \emph{data augmentation}.}
-\label{tab:comparison}
-\end{table}
-
-\paragraph{Synthèse de la progression.}
-La démarche en trois étapes met en évidence l'apport décisif du Transfer Learning~:
-\begin{itemize}
-    \item Le \textbf{MLP} (chapitre précédent) sert de baseline et plafonne à $\sim 68\%$ d'accuracy~: il ignore la structure spatiale des images et n'extrait que des relations globales pixel-à-pixel.
-    \item Le \textbf{CNN} avec data augmentation atteint $\sim 95\%$ grâce à la convolution (invariance par translation, hierarchie de features) et à l'augmentation qui élimine le sur-apprentissage.
-    \item L'\textbf{EfficientNetB0 + Transfer Learning} pousse les performances à $99{,}44\%$ avec un coût d'entraînement très réduit, validant définitivement le choix d'un backbone pré-entraîne sur ImageNet.
-\end{itemize}
-
-\paragraph{Lecture verticale du tableau.}
-Au-delà de l'accuracy, le tableau met en lumière trois indicateurs souvent négligés~: le recall sur la classe défectueuse (la métrique critique en QC industriel), la présence ou non de sur-apprentissage, et le coût d'entraînement. C'est sur ce dernier point que le Transfer Learning tire son avantage le plus stratégique~: la phase 1 entraîne moins de $1\,300$ paramètres, ce qui permet une convergence très rapide même sans GPU haut de gamme.
-
-% =====================================================================
-%  CHAPITRE 7 - Conclusion generale et perspectives
-% =====================================================================
-\chapter{Conclusion générale et perspectives}
-
-\section{Bilan du projet}
-
-Au terme de ce projet, nous avons conçu, implémenté, entraîne et évalué un \textbf{système intelligent de contrôle qualité} dedie aux impellers de fonderie, fondé sur l'apprentissage profond.
-
-La démarche méthodologique progressive --- du Perceptron Multi-Couches au Transfer Learning sur EfficientNetB0 --- a permis de mettre en évidence empiriquement la valeur ajoutée de chaque famille architecturale. Les résultats obtenus depassent les attentes initiales~: avec seulement $\sim 6\,600$ images d'entraînement et un GPU Colab, nous avons atteint \textbf{$99{,}44\%$ d'accuracy} et un \textbf{AUC de $0{,}9993$} sur l'ensemble de test, avec un \emph{recall} de \textbf{$99{,}34\%$} sur la classe défectueuse. Sans Transfer Learning, atteindre la même performance aurait nécessité des dizaines de milliers d'images et plusieurs jours d'entraînement.
-
-\begin{infobox}[Apports du projet]
-\begin{itemize}
-    \item \textbf{Pipeline cross-framework}~: implémentation double TensorFlow et PyTorch, garant de la reproductibilité.
-    \item \textbf{Démarche pédagogique progressive}~: MLP $\to$ CNN $\to$ Transfer Learning, chaque étape motivant la suivante.
-    \item \textbf{Modèle final compatible déploiement temps réel}~: $<10$\,ms d'inference, $<5$\,Mo de taille post-quantification.
-    \item \textbf{Recall de $99{,}34\%$ sur la classe défectueuse}~: compatible avec les exigences industrielles de QC.
-    \item \textbf{Analyse rigoureuse des erreurs}~: identification des cas résiduels et pistes d'amélioration.
-\end{itemize}
-\end{infobox}
-
-\section{Apports personnels}
-
-Au-dela des résultats techniques, ce projet à été pour notre groupe une expérience formatrice sur plusieurs plans~:
-
-\begin{itemize}
-    \item \textbf{Plan technique}~: maîtrise des frameworks TensorFlow et PyTorch, comprehension fine des architectures CNN modernes, pratique du Transfer Learning et du Fine-tuning.
-    \item \textbf{Plan méthodologique}~: importance de la reproductibilité, des hyperparamètres documentes, de l'évaluation rigoureuse sur un test set strictement disjoint.
-    \item \textbf{Plan organisationnel}~: travail en équipe sur un projet d'envergure, partage des tâches, intégration des contributions individuelles.
-    \item \textbf{Plan industriel}~: prise de conscience de l'asymétrie des coûts d'erreur et de l'importance des métriques spécifiques au domaine.
-\end{itemize}
-
-\section{Perspectives}
-
-Plusieurs pistes peuvent être explorées pour aller plus loin~:
-
-\subsection{Extension fonctionnelle}
-
-\begin{itemize}
-    \item \textbf{Multi-classes}~: distinguer plusieurs types de défauts (fissure, déformation, bavure, porosité) au lieu d'une simple classification binaire. Necessite un dataset annote en conséquence.
-    \item \textbf{Localisation}~: ajouter une détection d'objet (YOLO \cite{redmon2016}, Faster R-CNN \cite{ren2015}) ou une segmentation semantique (U-Net \cite{ronneberger2015}) pour identifier la zone du défaut, ce qui augmenterait l'interprétabilité et faciliterait le diagnostic du procédé.
-    \item \textbf{Estimation de severite}~: classer chaque défaut sur une échelle (mineur, majeur, critique) pour prioriser les actions correctives.
-\end{itemize}
-
-\subsection{Industrialisation}
-
-\begin{itemize}
-    \item \textbf{Deploiement embarque}~: quantification \texttt{int8} et export vers TFLite pour exécution sur Raspberry Pi, Jetson Nano ou Edge TPU en bord de ligne. Reduction mémoire et accélération sans perte significative de performance.
-    \item \textbf{Intégration en ligne}~: connexion à un système MES (Manufacturing Execution System) pour rejet automatique des pièces défectueuses, traçabilite, statistiques temps réel.
-    \item \textbf{Robustesse industrielle}~: collecte d'images réelles de l'usine pour validation \emph{in-situ} et fine-tuning final sur ce dataset spécifique.
-\end{itemize}
-
-\subsection{Amelioration continue}
-
-\begin{itemize}
-    \item \textbf{Active Learning}~: enrichissement progressif du dataset avec les cas incertains détectés en production, etiquetes par un expert humain. Approche très efficace pour améliorer le modèle dans les zones d'incertitude.
-    \item \textbf{Architecture plus récente}~: expérimentation de modèles \emph{Vision Transformer} (ViT \cite{dosovitskiy2020}) ou de modèles auto-supervisés (DINOv2 \cite{oquab2023}), qui peuvent surpasser EfficientNet dans certains regimes de données.
-    \item \textbf{Explicabilite}~: intégration de techniques \emph{Grad-CAM} \cite{selvaraju2017} pour visualiser les zones d'image ayant influence la décision du modèle, facilitant l'acceptation par les opérateurs.
-\end{itemize}
-
-\subsection{Ouverture vers l'Industrie 4.0}
-
-A plus long terme, ce système de contrôle qualité peut s'intégrer dans une démarche \emph{Industrie 4.0} plus large~:
-\begin{itemize}
-    \item \textbf{Boucle de retroaction sur le procédé}~: la détection de tendances dans les types de défauts peut servir de signal d'alerte pour ajuster les paramètres de fonderie (température, vitesse de coulée) avant que le taux de rejet ne devienne critique.
-    \item \textbf{Jumeau numérique}~: intégration au jumeau numérique de la ligne pour simulation et optimisation conjointe.
-    \item \textbf{Maintenance predictive}~: identification de signatures de défauts annoncant une usure de moule ou un dereglage de la chaîne de coulée.
-\end{itemize}
